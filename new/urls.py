@@ -3,7 +3,7 @@ from django.contrib import admin
 from USGS.views import *
 from Details.views import *
 from rest_framework import routers
-from AI.views import predict_risk_level
+from AI.views import predict_risk_level, audio_to_text
 
 forget_password_viewset = ForgetPasswordViewset.as_view({'post': 'create'})
 password_reset_viewset = PasswordResetViewset.as_view({'post': 'create'})
@@ -21,7 +21,7 @@ urlpatterns = [
     path('confirm_pass/',PasswordResetConfirmation, name='confirm_pass'),
     path('delete-account/', DeleteAccountView.as_view(), name='delete-account'),
     path('risk_level/', predict_risk_level),
-    
+    path('audio_to_txt/',audio_to_text)
     #path('Get_user/', UserDetailView.as_view()),
     
 

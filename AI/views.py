@@ -69,3 +69,31 @@ def predict_risk_level(request):
     else:
         # Return an error response if the request method is not supported
         return JsonResponse({'message': 'Unsupported request method.'}, status=405)
+
+
+import requests
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+API_URL = "https://api-inference.huggingface.co/models/alaa1997/ArabicSpeechToTextModel"
+headers = {"Authorization": "Bearer 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"}
+
+@api_view(['POST'])
+def audio_to_text(request):
+    # Check if the request method is POST
+    if request.method == 'POST':
+        # Retrieve the audio file from the request data
+        audio_file = request.data.get('audio')
+        
+        # Make a request to the Hugging Face API to convert the audio to text
+        response = requests.post(API_URL, headers=headers, data=audio_file.read())
+        response_data = response.json()
+        
+        # Extract the text from the response data
+        text = response_data['text']
+        
+        # Return the text as a JSON response
+        return Response({'text': text})
+    else:
+        # Return an error response if the request method is not supported
+        return Response({'message': 'Unsupported request method.'}, status=405)
