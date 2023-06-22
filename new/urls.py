@@ -3,11 +3,7 @@ from django.contrib import admin
 from USGS.views import *
 from Details.views import *
 from rest_framework import routers
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-    TokenVerifyView,
-)
+from AI.views import predict_risk_level
 
 forget_password_viewset = ForgetPasswordViewset.as_view({'post': 'create'})
 password_reset_viewset = PasswordResetViewset.as_view({'post': 'create'})
@@ -23,7 +19,8 @@ urlpatterns = [
     path('password_reset/', password_reset_viewset, name='password_reset'),
     path('forget_pass/', forget_password_viewset, name = 'forget_pass'),
     path('confirm_pass/',PasswordResetConfirmation, name='confirm_pass'),
-     path('delete-account/', DeleteAccountView.as_view(), name='delete-account'),
+    path('delete-account/', DeleteAccountView.as_view(), name='delete-account'),
+    path('risk_level/', predict_risk_level),
     
     #path('Get_user/', UserDetailView.as_view()),
     

@@ -16,7 +16,7 @@ class Profile(models.Model):
     phone = models.CharField(blank=True, null=True,max_length=20)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
-
+    
     def __str__(self):
         return f'{self.user.email} Profile'
 
