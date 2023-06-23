@@ -1,4 +1,3 @@
-from django.http import JsonResponse
 from django.contrib.auth import get_user_model
 from Details.models import Profile
 from .models import Health
@@ -92,11 +91,12 @@ def audio_to_text(request):
         response = requests.post(API_URL, headers=headers, data=audio_file.read())
         response_data = response.json()
         
+        
         # Extract the text from the response data
         text = response_data['text']
         utf8_text = text.encode('utf-8')
         # Return the text as a JSON response
-        return Response({'text': utf8_text})
+        return Response({'text': utf8_text},headers={'Content-Type': 'application/json; charset=utf-8'})
     else:
         # Return an error response if the request method is not supported
         return Response({'message': 'Unsupported request method.'}, status=405)
