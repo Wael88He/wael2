@@ -79,13 +79,15 @@ headers = {"Authorization": "Bearer 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"}
 
 @api_view(['POST'])
 def audio_to_text(request):
-    # Check if the request method is POST
     if request.method == 'POST':
-        # Retrieve the audio file from the request data
         audio_file = request.FILES.get('audio')
-         # Check if the audio file is in the AAC format
         
+        if audio_file is None:
+            return Response({'message': 'No audio file was uploaded.'}, status=400)
+        if not hasattr(audio_file, 'read'):
+            return Response({'message': 'Invalid audio file format.'}, status=400)
     
+
         # Make a request to the Hugging Face API to convert the audio to text
         response = requests.post(API_URL, headers=headers, data=audio_file.read())
         response_data = response.json()
