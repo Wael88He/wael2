@@ -74,7 +74,6 @@ def predict_risk_level(request):
 import requests
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-
 API_URL = "https://api-inference.huggingface.co/models/alaa1997/ArabicSpeechToTextModel"
 headers = {"Authorization": "Bearer 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"}
 
@@ -83,8 +82,10 @@ def audio_to_text(request):
     # Check if the request method is POST
     if request.method == 'POST':
         # Retrieve the audio file from the request data
-        audio_file = request.data.get('audio')
+        audio_file = request.FILES.get('audio')
+         # Check if the audio file is in the AAC format
         
+    
         # Make a request to the Hugging Face API to convert the audio to text
         response = requests.post(API_URL, headers=headers, data=audio_file.read())
         response_data = response.json()
