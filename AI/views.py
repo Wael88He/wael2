@@ -94,9 +94,9 @@ def audio_to_text(request):
         
         # Extract the text from the response data
         text = response_data['text']
-        
+        utf8_text = text.encode('utf-8')
         # Return the text as a JSON response
-        return Response({'text': text})
+        return Response({'text': utf8_text})
     else:
         # Return an error response if the request method is not supported
         return Response({'message': 'Unsupported request method.'}, status=405)
