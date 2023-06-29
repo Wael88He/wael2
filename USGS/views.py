@@ -48,7 +48,6 @@ class EarthquakeView(APIView):
                 time_aware = timezone.localize(time_str)
                 longitude = feature['geometry']['coordinates'][0]
                 latitude = feature['geometry']['coordinates'][1]
-                
                 depth = feature['geometry']['coordinates'][2]
                 
                 earthquake = {'place': place, 'magnitude': magnitude,
@@ -132,3 +131,48 @@ class AffectedUsers(APIView):
         serializer = LocationSerializer(affected_locations, many=True)
         return Response(serializer.data)
 
+def get_latest_earthquake_data():
+    url = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson'
+    response = requests.get(url)
+    data = response.json()
+    return data
+from fcm_django.models import FCMDevice
+
+def get_users_registration_tokens():
+    users = User.objects.all()
+    registration_tokens = FCMDevice.objects.filter(user__in=users).values_list('registration_id', flat=True)
+    return list(registration_tokens)
+
+from firebase_admin.messaging import Notification , MulticastMessage,Message
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view, renderer_classes
+from fcm_django.models import FCMDevice
+from django.http import HttpResponse
+@api_view(('POST',))
+@csrf_exempt
+def send_notification(request):
+    
+    #earthquake_data = get_latest_earthquake_data()
+
+    
+    #location = earthquake_data['features'][0]['properties']['place']
+    #magnitude = earthquake_data['features'][0]['properties']['mag']
+    #time = earthquake_data['features'][0]['properties']['time']
+
+    # Get the registration tokens for all users in the database
+    registration_tokens = get_users_registration_tokens()
+
+    # Create a notification message
+    message=Message(
+        notification=Notification(
+            title=f'New earthquake in to!',
+            body=f'A 55 magnitude earthquake occurred at syria .',
+            image='https://npr.brightspotcdn.com/dims4/default/7bca66e/2147483647/strip/true/crop/1760x1085+0+0/resize/880x543!/quality/90/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2F08%2F65%2F79d6935f4122845e17f6bb0ebf0e%2Fearthquake-vector-symbol.png'
+        ),
+        #tokens=registration_tokens,
+    )
+    devices = FCMDevice.objects.all()
+    response= devices.send_message(message)
+
+    # Return a response to the client
+    return HttpResponse(f'{response} messages were sent successfully!')

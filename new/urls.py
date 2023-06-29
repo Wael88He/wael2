@@ -21,7 +21,8 @@ urlpatterns = [
     path('confirm_pass/',PasswordResetConfirmation, name='confirm_pass'),
     path('delete-account/', DeleteAccountView.as_view(), name='delete-account'),
     path('risk_level/', predict_risk_level),
-    path('audio_to_txt/',audio_to_text)
+    path('audio_to_txt/',audio_to_text),
+    path('send-notification/', send_notification, name='send_notification'),
     #path('Get_user/', UserDetailView.as_view()),
     
 

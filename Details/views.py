@@ -84,11 +84,11 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         return Response(response_data)
 
     
-   
+from fcm_django.models import FCMDevice
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    
     serializer = LoginSerializer(data=request.data)
     if serializer.is_valid():
         user = authenticate(
@@ -98,10 +98,20 @@ def login_view(request):
         )
         if user is not None:
             login(request, user)
+
+            # Store the FCM registration token for the user
+            registration_token = request.data.get('registration_token')
+            if registration_token is not None:
+                device = FCMDevice.objects.filter(registration_id=registration_token, user=user).first()
+                if device is None:
+                    device = FCMDevice.objects.create(registration_id=registration_token, type='android', user=user)
+                else:
+                    device.type = 'android'
+                    device.save()
+
             refresh = RefreshToken.for_user(user)
             return Response({'refresh': str(refresh), 'access': str(refresh.access_token)})
     return Response({'message':'username or password incorrect'}, status=status.HTTP_400_BAD_REQUEST)
-
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.decorators import api_view, authentication_classes
 from rest_framework.response import Response

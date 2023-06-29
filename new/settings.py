@@ -43,7 +43,9 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'USGS',
     'Details',
-    'AI'
+    'AI',
+    'fcm_django'
+
 ]
 
 REST_FRAMEWORK = {
@@ -108,7 +110,7 @@ DATABASES = {
 DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql' 
 
 
-LANGUAGE_CODE = 'ar'
+LANGUAGE_CODE = 'en'
 LANGUAGES = [
     ('en', 'English'),
     ('ar', 'Arabic'),
@@ -170,5 +172,16 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'earthquakealert14@gmail.com'
 EMAIL_HOST_PASSWORD = 'wdnbxisbiiiofpyo'
 
-# Default "from" address for emails sent by the server
 DEFAULT_FROM_EMAIL = 'earthquakealert14@gmail.com'
+
+
+from firebase_admin import initialize_app
+#keyfile_path = os.environ['GOOGLE_APPLICATION_CREDENTIALS']
+#from google.cloud import storage
+
+#client = storage.Client.from_service_account_json(keyfile_path)
+FIREBASE_APP = initialize_app()
+
+FCM_DJANGO_SETTINGS = {
+    "FCM_SERVER_KEY": "AAAA2IWGwoU:APA91bEXq69IdmMD3TV_zh3M_e10voNO4oKCrFgL6lXUjBofxUxo3TBRJDWJVc-ylVY55mE48tDi5BnrCckgoKY0myYZnnEB2n7cYs_yw_tJFjmV10dTY6bZTpwCs7nG09Od6AVfe_vO"
+}
