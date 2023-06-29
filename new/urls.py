@@ -4,6 +4,7 @@ from USGS.views import *
 from Details.views import *
 from rest_framework import routers
 from AI.views import predict_risk_level, audio_to_text
+from fcm_django.api.rest_framework import FCMDeviceAuthorizedViewSet
 
 forget_password_viewset = ForgetPasswordViewset.as_view({'post': 'create'})
 password_reset_viewset = PasswordResetViewset.as_view({'post': 'create'})
@@ -23,6 +24,9 @@ urlpatterns = [
     path('risk_level/', predict_risk_level),
     path('audio_to_txt/',audio_to_text),
     path('send-notification/', send_notification, name='send_notification'),
+    path('devices/', FCMDeviceAuthorizedViewSet.as_view({'post': 'create'}), name='create_fcm_device')
+
+    
     #path('Get_user/', UserDetailView.as_view()),
     
 

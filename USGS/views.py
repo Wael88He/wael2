@@ -171,6 +171,7 @@ def send_notification(request):
         ),
         #tokens=registration_tokens,
     )
+    #for device in devices ...
     devices = FCMDevice.objects.all()
     response= devices.send_message(message)
 
