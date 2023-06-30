@@ -165,8 +165,8 @@ def send_notification(request):
     # Create a notification message
     message=Message(
         notification=Notification(
-            title=f'New earthquake in to!',
-            body=f'A 55 magnitude earthquake occurred at syria .',
+            title=f'New earthquake in Tarama,Japan!',
+            body=f'A 5.2 magnitude earthquake occurred at July 10, 2022, 3:30 PM',
             image='https://npr.brightspotcdn.com/dims4/default/7bca66e/2147483647/strip/true/crop/1760x1085+0+0/resize/880x543!/quality/90/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2F08%2F65%2F79d6935f4122845e17f6bb0ebf0e%2Fearthquake-vector-symbol.png'
         ),
         #tokens=registration_tokens,

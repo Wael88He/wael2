@@ -110,7 +110,7 @@ DATABASES = {
 DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql' 
 
 
-LANGUAGE_CODE = 'ar'
+LANGUAGE_CODE = 'en'
 LANGUAGES = [
     ('en', 'English'),
     ('ar', 'Arabic'),
