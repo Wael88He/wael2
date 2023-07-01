@@ -54,6 +54,9 @@ def predict_risk_level(request):
             else:
                 return JsonResponse({'message': 'Health object already exists for this user.'}, status=400)
         elif request.method == 'PUT':
+            if health is None:
+                health = Health(user=user, systolic_bp=systolic_bp, diastolic_bp=diastolic_bp, heart_rate=heart_rate, risk_level=predicted_decoded[0])
+                health.save()
             # Update the existing Health object with the input data and predicted risk level
             if health is not None:
                 health.systolic_bp = systolic_bp

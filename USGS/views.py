@@ -3,10 +3,11 @@ import time
 from datetime import datetime, timedelta
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Earthquake
+from .models import *
 import pytz
 from django.utils import timezone
 from django.contrib.auth.models import User
+from Details.views import *
 
 #from django.contrib.gis.db.models.functions import Distance
 from Details.serializers import UserSerializer
@@ -65,7 +66,14 @@ def get_latest_earthquake_data():
     data = response.json()
     earthquake = data['features'][0]
     return earthquake
+
 from django.db.models import Q
+from firebase_admin.messaging import Notification , MulticastMessage,Message
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view, renderer_classes
+from fcm_django.models import FCMDevice
+from django.http import HttpResponse
+
 class AffectedUsers(APIView):
     def get(self, request):
         earthquake = get_latest_earthquake_data()
@@ -95,23 +103,25 @@ class AffectedUsers(APIView):
 
         # If the distance is less than or equal to the radius, add the user's FCM token to the affected users list
          if distance_meters <= radius_meters:
-            affected_users_tokens.append(user.user.fcm_token)
+            # Retrieve the FCMDevice object associated with the user and add its registration ID to the list
+            fcm_device = FCMDevice.objects.filter(user=user.user).first()
+            print(fcm_device)
+            if fcm_device:
+                affected_users_tokens.append(fcm_device)
+        message=Message(
+        notification=Notification(
+            title=f'New earthquake in Tarama,Japan!',
+            body=f'A 5.2 magnitude earthquake occurred at July 10, 2022, 3:30 PM',
+            image='https://npr.brightspotcdn.com/dims4/default/7bca66e/2147483647/strip/true/crop/1760x1085+0+0/resize/880x543!/quality/90/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2F08%2F65%2F79d6935f4122845e17f6bb0ebf0e%2Fearthquake-vector-symbol.png'
+        )) 
+        devices = affected_users_tokens
+        print(devices)
+        response= devices.send_message(message)
+        return HttpResponse(f'{response} messages were sent successfully!')
 
 
-        
-        return Response(serializer.data)
 
-def get_latest_earthquake_data():
-    url = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson'
-    response = requests.get(url)
-    data = response.json()
-    return data
 
-from firebase_admin.messaging import Notification , MulticastMessage,Message
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.decorators import api_view, renderer_classes
-from fcm_django.models import FCMDevice
-from django.http import HttpResponse
 @api_view(('POST',))
 @csrf_exempt
 def send_notification(request):
@@ -136,5 +146,6 @@ def send_notification(request):
     )
     
     devices = FCMDevice.objects.all()
+    print(devices)
     response= devices.send_message(message)
     return HttpResponse(f'{response} messages were sent successfully!')
