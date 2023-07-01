@@ -1,7 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-
+from fcm_django.models import FCMDevice
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -18,12 +17,10 @@ from django.utils import timezone
 from .models import *
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, BasePermission
-from rest_framework import generics
+
 from rest_framework.permissions import AllowAny
 from .serializers import UserSerializer
-from rest_framework import generics
-from rest_framework.permissions import AllowAny
-from .models import User, Profile
+
 class UserRegistrationView(APIView):
     def post(self, request):
         user_serializer = UserSerializer(data=request.data,context={'request': request})
@@ -83,14 +80,6 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         response_data.update(serializer.data)
         return Response(response_data)
 
-    
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from fcm_django.models import FCMDevice
-from django.contrib.auth import authenticate, login
-from rest_framework_simplejwt.tokens import RefreshToken
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
@@ -140,16 +129,18 @@ from django.conf import settings
 def logout_view(request):
     
     token = request.data.get('token')
-    print(token)
+    
     if not token:
         return Response({'message': 'Token not found in request body'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
+        user = jwt_decode_handler(token)['user_id']
+        FCMDevice.objects.filter(user=user).delete()
 
         refresh_token = RefreshToken(token)
         
         refresh_token.blacklist()
-        print('hi')
+        
         return Response({'message':'logout successfully'},status=status.HTTP_205_RESET_CONTENT)
     except:
         return Response({'message': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)

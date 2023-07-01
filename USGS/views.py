@@ -76,7 +76,23 @@ from django.http import HttpResponse
 
 class AffectedUsers(APIView):
     def get(self, request):
-        earthquake = get_latest_earthquake_data()
+        #earthquake = get_latest_earthquake_data()
+        earthquake={
+  "type": "Feature",
+  "properties": {
+    "mag": 5.4,
+    "place": "Southern Alaska",
+    "time": 1625180223060
+  },
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+      35.0,
+      36.0,
+      34.6
+    ]
+  }
+}
         # Retrieve the locations of the users within the affected area
         affected_users = Profile.objects.filter(Q(latitude__isnull=False) & Q(longitude__isnull=False)
     )
@@ -90,9 +106,10 @@ class AffectedUsers(APIView):
         
     # Calculate the radius based on the earthquake's magnitude
         radius_meters = ((earthquake['properties']['mag'] * 110) / 2) * 1000
+        print(radius_meters)
 
             # Filter out users whose distance from the earthquake is greater than the radius
-        affected_users_tokens = []
+        affected_users_tokens=[]
         for user in affected_users:
         # Convert the user coordinates to a Shapely Point object and to meters
          user_point = Point(user.longitude, user.latitude)
@@ -100,6 +117,7 @@ class AffectedUsers(APIView):
 
         # Calculate the distance between the user and earthquake in meters
          distance_meters = earthquake_point_meters.distance(user_point_meters)
+         print(distance_meters)
 
         # If the distance is less than or equal to the radius, add the user's FCM token to the affected users list
          if distance_meters <= radius_meters:
@@ -110,14 +128,14 @@ class AffectedUsers(APIView):
                 affected_users_tokens.append(fcm_device)
         message=Message(
         notification=Notification(
-            title=f'New earthquake in Tarama,Japan!',
-            body=f'A 5.2 magnitude earthquake occurred at July 10, 2022, 3:30 PM',
+            title=f'New earthquake in Syria,Alepoo!',
+            body=f'A 7.7 magnitude earthquake occurred at July 10, 2022, 3:30 PM',
             image='https://npr.brightspotcdn.com/dims4/default/7bca66e/2147483647/strip/true/crop/1760x1085+0+0/resize/880x543!/quality/90/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2F08%2F65%2F79d6935f4122845e17f6bb0ebf0e%2Fearthquake-vector-symbol.png'
         )) 
-        devices = affected_users_tokens
-        print(devices)
-        response= devices.send_message(message)
-        return HttpResponse(f'{response} messages were sent successfully!')
+        for device in affected_users_tokens:
+         device.send_message(message)
+         print(device)
+        return HttpResponse({'message' 'Notifications sent.'})
 
 
 
@@ -146,6 +164,6 @@ def send_notification(request):
     )
     
     devices = FCMDevice.objects.all()
-    print(devices)
+    #print(devices)
     response= devices.send_message(message)
     return HttpResponse(f'{response} messages were sent successfully!')
