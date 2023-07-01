@@ -59,76 +59,46 @@ class EarthquakeView(APIView):
         else:
             return Response({'error': 'Error retrieving earthquake data'})
 
-
-from django.core.mail import EmailMultiAlternatives
-from django.conf import settings
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-
-from django.core.mail import EmailMultiAlternatives
-from django.conf import settings
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-from django.templatetags.static import static
-
+def get_latest_earthquake_data():
+    url = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson'
+    response = requests.get(url)
+    data = response.json()
+    earthquake = data['features'][0]
+    return earthquake
+from django.db.models import Q
 class AffectedUsers(APIView):
     def get(self, request):
-        # Get the longitude and latitude from the query parameters
-        affected_users = User.objects.filter(profile__longitude=longitude, profile__latitude=latitude)
+        earthquake = get_latest_earthquake_data()
+        # Retrieve the locations of the users within the affected area
+        affected_users = Profile.objects.filter(Q(latitude__isnull=False) & Q(longitude__isnull=False)
+    )
 
         # Define a projection that converts lat/long coordinates to meters
         project_meters = pyproj.Transformer.from_crs('epsg:4326', 'epsg:3857', always_xy=True).transform
+        # Convert the earthquake coordinates to a Shapely Point object and to meters
+        earthquake_point = Point(earthquake['geometry']['coordinates'])
+        earthquake_point_meters = transform(project_meters, earthquake_point)
+        
+        
+    # Calculate the radius based on the earthquake's magnitude
+        radius_meters = ((earthquake['properties']['mag'] * 110) / 2) * 1000
 
+            # Filter out users whose distance from the earthquake is greater than the radius
+        affected_users_tokens = []
+        for user in affected_users:
         # Convert the user coordinates to a Shapely Point object and to meters
-        user_point = Point(longitude, latitude)
-        user_point_meters = transform(project_meters, user_point)
+         user_point = Point(user.longitude, user.latitude)
+         user_point_meters = transform(project_meters, user_point)
 
-        # Calculate the radius based on the user's proximity to the affected locations
-        max_distance_km = 100  # maximum distance to consider in km
-        radius_meters = max_distance_km * 1000
+        # Calculate the distance between the user and earthquake in meters
+         distance_meters = earthquake_point_meters.distance(user_point_meters)
 
-        # Filter out locations whose distance from the user is greater than the radius
-        affected_locations = []
-        for location in Location.objects.all():
-            # Convert the location point to meters
-            location_point = location.point_geometry
-            location_point_meters = transform(project_meters, location_point)
+        # If the distance is less than or equal to the radius, add the user's FCM token to the affected users list
+         if distance_meters <= radius_meters:
+            affected_users_tokens.append(user.user.fcm_token)
 
-            # Calculate the distance between the user and location in meters
-            distance_meters = user_point_meters.distance(location_point_meters)
 
-            # If the distance is less than or equal to the radius, add the location to the affected locations list
-            if distance_meters <= radius_meters:
-                affected_locations.append(location)
-
-        # Retrieve the email addresses of the affected users
-        affected_users = User.objects.filter(location__in=affected_locations).distinct()
-
-        # Create a message body that includes the earthquake information and the image
-        message_body = render_to_string('email_template.html', {'locations': affected_locations})
-        message_body_text = strip_tags(message_body)
-
-        # Add the image to the email as an attachment
-        png_path = 'earthquake-vector-symbol.png'
-        with open(png_path, 'rb') as f:
-            png_data = f.read()
-        png_filename = 'earthquake.png'
-        png_mime_type = 'image/png'
-
-        # Create an EmailMultiAlternatives object and attach the PNG image
-        email = EmailMultiAlternatives(
-            'Location Alert',
-            message_body_text,
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email for user in affected_users],
-        )
-        email.attach(png_filename, png_data, png_mime_type)
-
-        # Send the email to the affected users
-        email.send()
-
-        # Serialize the affected locations and return the response
-        serializer = LocationSerializer(affected_locations, many=True)
+        
         return Response(serializer.data)
 
 def get_latest_earthquake_data():
@@ -136,12 +106,6 @@ def get_latest_earthquake_data():
     response = requests.get(url)
     data = response.json()
     return data
-from fcm_django.models import FCMDevice
-
-def get_users_registration_tokens():
-    users = User.objects.all()
-    registration_tokens = FCMDevice.objects.filter(user__in=users).values_list('registration_id', flat=True)
-    return list(registration_tokens)
 
 from firebase_admin.messaging import Notification , MulticastMessage,Message
 from django.views.decorators.csrf import csrf_exempt
@@ -159,8 +123,7 @@ def send_notification(request):
     #magnitude = earthquake_data['features'][0]['properties']['mag']
     #time = earthquake_data['features'][0]['properties']['time']
 
-    # Get the registration tokens for all users in the database
-    registration_tokens = get_users_registration_tokens()
+    
 
     # Create a notification message
     message=Message(
@@ -169,11 +132,9 @@ def send_notification(request):
             body=f'A 5.2 magnitude earthquake occurred at July 10, 2022, 3:30 PM',
             image='https://npr.brightspotcdn.com/dims4/default/7bca66e/2147483647/strip/true/crop/1760x1085+0+0/resize/880x543!/quality/90/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2F08%2F65%2F79d6935f4122845e17f6bb0ebf0e%2Fearthquake-vector-symbol.png'
         ),
-        #tokens=registration_tokens,
+        
     )
-    #for device in devices ...
+    
     devices = FCMDevice.objects.all()
     response= devices.send_message(message)
-
-    # Return a response to the client
     return HttpResponse(f'{response} messages were sent successfully!')
