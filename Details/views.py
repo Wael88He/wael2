@@ -84,7 +84,12 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         return Response(response_data)
 
     
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from fcm_django.models import FCMDevice
+from django.contrib.auth import authenticate, login
+from rest_framework_simplejwt.tokens import RefreshToken
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -102,16 +107,28 @@ def login_view(request):
             # Store the FCM registration token for the user
             registration_token = request.data.get('registration_token')
             if registration_token is not None:
-                device = FCMDevice.objects.filter(registration_id=registration_token, user=user).first()
-                if device is None:
-                    device = FCMDevice.objects.create(registration_id=registration_token, type='android', user=user)
-                else:
-                    device.type = 'android'
-                    device.save()
+                device = create_or_update_fcm_device(registration_token, user)
 
             refresh = RefreshToken.for_user(user)
             return Response({'refresh': str(refresh), 'access': str(refresh.access_token)})
     return Response({'message':'username or password incorrect'}, status=status.HTTP_400_BAD_REQUEST)
+
+def create_or_update_fcm_device(registration_token, user):
+    # Delete any old FCMDevice objects with the same registration ID but a different user
+    FCMDevice.objects.filter(registration_id=registration_token).exclude(user=user).delete()
+
+    # Create or update the FCMDevice object for the user
+    device, created = FCMDevice.objects.get_or_create(
+        registration_id=registration_token,
+        defaults={'type': 'android', 'user': user},
+    )
+
+    if not created:
+        device.type = 'android'
+        device.user = user
+        device.save()
+
+    return device
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.decorators import api_view, authentication_classes
 from rest_framework.response import Response
