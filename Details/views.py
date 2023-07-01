@@ -134,12 +134,12 @@ def logout_view(request):
         return Response({'message': 'Token not found in request body'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        user = jwt_decode_handler(token)['user_id']
-        FCMDevice.objects.filter(user=user).delete()
+       
 
         refresh_token = RefreshToken(token)
         
         refresh_token.blacklist()
+        
         
         return Response({'message':'logout successfully'},status=status.HTTP_205_RESET_CONTENT)
     except:
