@@ -9,6 +9,7 @@ import json
 import numpy as np
 from django.views.decorators.csrf import csrf_exempt
 import json
+from django.http import JsonResponse
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 @csrf_exempt
