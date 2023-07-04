@@ -8,8 +8,6 @@ import pytz
 from django.utils import timezone
 from django.contrib.auth.models import User
 from Details.views import *
-
-#from django.contrib.gis.db.models.functions import Distance
 from Details.serializers import UserSerializer
 from shapely.geometry import Point
 from shapely.ops import transform
@@ -80,62 +78,58 @@ class AffectedUsers(APIView):
         earthquake={
   "type": "Feature",
   "properties": {
-    "mag": 5.4,
+    "mag": 7.7,
     "place": "Southern Alaska",
     "time": 1625180223060
   },
   "geometry": {
     "type": "Point",
     "coordinates": [
-      35.0,
-      36.0,
+      33.515635808708694, 36.27114325003677,
       34.6
     ]
   }
 }
-        # Retrieve the locations of the users within the affected area
         affected_users = Profile.objects.filter(Q(latitude__isnull=False) & Q(longitude__isnull=False)
     )
 
-        # Define a projection that converts lat/long coordinates to meters
         project_meters = pyproj.Transformer.from_crs('epsg:4326', 'epsg:3857', always_xy=True).transform
         # Convert the earthquake coordinates to a Shapely Point object and to meters
         earthquake_point = Point(earthquake['geometry']['coordinates'])
+        print('epoint : ',earthquake_point)
         earthquake_point_meters = transform(project_meters, earthquake_point)
-        
-        
-    # Calculate the radius based on the earthquake's magnitude
-        radius_meters = ((earthquake['properties']['mag'] * 110) / 2) * 1000
-        print(radius_meters)
+        #print('epointm :',earthquake_point_meters)
 
-            # Filter out users whose distance from the earthquake is greater than the radius
+        
+        radius_meters = ((earthquake['properties']['mag'] * 110) / 2) * 1000
+        print('R:',radius_meters)
+
         affected_users_tokens=[]
         for user in affected_users:
         # Convert the user coordinates to a Shapely Point object and to meters
          user_point = Point(user.longitude, user.latitude)
+         
          user_point_meters = transform(project_meters, user_point)
 
-        # Calculate the distance between the user and earthquake in meters
          distance_meters = earthquake_point_meters.distance(user_point_meters)
-         print(distance_meters)
+         #print('dis:',distance_meters)
+         
 
-        # If the distance is less than or equal to the radius, add the user's FCM token to the affected users list
          if distance_meters <= radius_meters:
-            # Retrieve the FCMDevice object associated with the user and add its registration ID to the list
+            print('affected : ',user.user,user_point)
             fcm_device = FCMDevice.objects.filter(user=user.user).first()
-            print(fcm_device)
             if fcm_device:
                 affected_users_tokens.append(fcm_device)
         message=Message(
         notification=Notification(
-            title=f'New earthquake in Syria,Alepoo!',
-            body=f'A 7.7 magnitude earthquake occurred at July 10, 2022, 3:30 PM',
+            title=f'New earthquake in {place}!',
+            body=f'A {mag} magnitude earthquake occurred at {time}',
             image='https://npr.brightspotcdn.com/dims4/default/7bca66e/2147483647/strip/true/crop/1760x1085+0+0/resize/880x543!/quality/90/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2F08%2F65%2F79d6935f4122845e17f6bb0ebf0e%2Fearthquake-vector-symbol.png'
         )) 
         for device in affected_users_tokens:
          device.send_message(message)
          print(device)
-        return HttpResponse({'message' 'Notifications sent.'})
+        return HttpResponse({'message :Notifications sent.'})
 
 
 
@@ -143,16 +137,7 @@ class AffectedUsers(APIView):
 @api_view(('POST',))
 @csrf_exempt
 def send_notification(request):
-    
-    #earthquake_data = get_latest_earthquake_data()
-
-    
-    #location = earthquake_data['features'][0]['properties']['place']
-    #magnitude = earthquake_data['features'][0]['properties']['mag']
-    #time = earthquake_data['features'][0]['properties']['time']
-
-    
-
+ 
     # Create a notification message
     message=Message(
         notification=Notification(

@@ -37,17 +37,14 @@ def predict_risk_level(request):
         diastolic_bp = data.get('diastolic_bp')
         heart_rate = data.get('heart_rate')
 
-        # Load the trained model and label encoder from the joblib files
         model = joblib.load('health.py')
         label_encoder = joblib.load('label_encoder.joblib')
 
-        # Make a prediction
         new_data = [[profile.age, systolic_bp, diastolic_bp, heart_rate]]
         predicted = model.predict(new_data)
         predicted_decoded = label_encoder.inverse_transform(np.argmax(predicted, axis=1))
 
         if request.method == 'POST':
-            # Create a new Health object with the input data and predicted risk level
             if health is None:
                 health = Health(user=user, systolic_bp=systolic_bp, diastolic_bp=diastolic_bp, heart_rate=heart_rate, risk_level=predicted_decoded[0])
                 health.save()
@@ -57,7 +54,6 @@ def predict_risk_level(request):
             if health is None:
                 health = Health(user=user, systolic_bp=systolic_bp, diastolic_bp=diastolic_bp, heart_rate=heart_rate, risk_level=predicted_decoded[0])
                 health.save()
-            # Update the existing Health object with the input data and predicted risk level
             if health is not None:
                 health.systolic_bp = systolic_bp
                 health.diastolic_bp = diastolic_bp
@@ -67,10 +63,8 @@ def predict_risk_level(request):
             else:
                 return JsonResponse({'message': 'No Health object found for this user.'}, status=404)
 
-        # Return the predicted risk level as a JSON response
         return JsonResponse({'message': predicted_decoded[0]})
     else:
-        # Return an error response if the request method is not supported
         return JsonResponse({'message': 'Unsupported request method.'}, status=405)
 
 
@@ -90,17 +84,12 @@ def audio_to_text(request):
         if not hasattr(audio_file, 'read'):
             return Response({'message': 'Invalid audio file format.'}, status=400)
     
-
-        # Make a request to the Hugging Face API to convert the audio to text
         response = requests.post(API_URL, headers=headers, data=audio_file.read())
         response_data = response.json()
         
         
-        # Extract the text from the response data
         text = response_data['text']
         utf8_text = text.encode('utf-8')
-        # Return the text as a JSON response
         return Response({'text': utf8_text},headers={'Content-Type': 'application/json; charset=utf-8'})
     else:
-        # Return an error response if the request method is not supported
         return Response({'message': 'Unsupported request method.'}, status=405)

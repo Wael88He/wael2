@@ -266,7 +266,6 @@ class PasswordResetConfirmationViewset(viewsets.ViewSet):
         user.set_password(new_password)
         user.save()
 
-        # Delete the password reset code from the database after it has been used
         password_reset_code.delete()
 
         return Response({'message': 'Password reset successful'}, status=status.HTTP_200_OK)
